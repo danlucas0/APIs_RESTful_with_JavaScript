@@ -23,7 +23,37 @@ const getCardapio = (req, res) => {
   }
 };
 
-// Exporta a função para ser usada nas rotas
+// Função que retorna um item específico do cardápio pelo ID
+// Busca um item usando o parâmetro de rota :id
+const getCardapioItem = (req, res) => {
+  try {
+    // Pega o ID do parâmetro da URL e converte para número
+    const id = parseInt(req.params.id);
+
+    // Busca o item no array do cardápio
+    const item = cardapio.find(item => item.id === id);
+
+    // Se o item não foi encontrado, retorna 404
+    if (!item) {
+      return res.status(404).json({
+        message: 'Item não encontrado'
+      });
+    }
+
+    // Se encontrou, retorna o item
+    res.status(200).json(item);
+  } catch (error) {
+    // Se algo der errado, retorna erro 500
+    res.status(500).json({
+      sucesso: false,
+      mensagem: 'Erro ao buscar item do cardápio',
+      erro: error.message
+    });
+  }
+};
+
+// Exporta as funções para serem usadas nas rotas
 module.exports = {
-  getCardapio
+  getCardapio,
+  getCardapioItem
 };

@@ -14,8 +14,15 @@ const cardapio = [
 // Inicialmente vazio, será preenchido quando clientes fizerem pedidos
 const comandas = [];
 
-// Exportamos ambos os arrays para serem usados em outros arquivos
+// Função para resetar o array de comandas (útil para testes)
+// Remove todas as comandas e reseta o array para vazio
+const resetComandas = () => {
+  comandas.length = 0; // Limpa o array sem criar uma nova referência
+};
+
+// Exportamos os arrays e a função de reset para serem usados em outros arquivos
 module.exports = {
   cardapio,
-  comandas
+  comandas,
+  resetComandas
 };
