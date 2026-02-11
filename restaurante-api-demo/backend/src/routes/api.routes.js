@@ -17,16 +17,16 @@ router.get('/cardapio', cardapioController.listarCardapio);
 
 // // ========== ROTAS DAS COMANDAS ==========
 // // GET /api/comandas - Retorna todas as comandas
-// router.get('/comandas', comandasController.getComandas);
+router.get('/comandas', comandasController.getComandas);
 
 // // POST /api/comandas - Cria uma nova comanda
-// router.post('/comandas', comandasController.createComanda);
+router.post('/comandas', comandasController.createComanda);
 
 // // PATCH /api/comandas/:id - Atualiza o status de uma comanda
-// router.patch('/comandas/:id', comandasController.updateComandaStatus);
+router.patch('/comandas/:id', comandasController.updateComandaStatus);
 
 // // DELETE /api/comandas/:id - Deleta uma comanda
-// router.delete('/comandas/:id', comandasController.deleteComanda);
+router.delete('/comandas/:id', comandasController.deleteComanda);
 
 // Exporta o router para ser usado no server.js
 module.exports = router;
