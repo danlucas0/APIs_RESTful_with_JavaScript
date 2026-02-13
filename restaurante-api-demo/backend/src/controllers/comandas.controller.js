@@ -1,18 +1,17 @@
-const db = require('../config/db');
+// Controlador de Comandas (Pedidos)
+// Este arquivo é como o "Chef de Pedidos" que recebe e gerencia os pedidos dos clientes
 
-/**
- * GET - Listar todas as comandas
- */
-const getComandas = async (req, res) => {
+const { comandas } = require('../services/database');
+
+// Função que retorna todas as comandas (pedidos) registradas
+const getComandas = (req, res) => {
   try {
-    const [rows] = await db.execute('SELECT * FROM comandas ORDER BY id DESC');
-
     res.status(200).json({
       sucesso: true,
-      quantidade: rows.length,
-      dados: rows
+      mensagem: 'Comandas recuperadas com sucesso',
+      quantidade: comandas.length,
+      dados: comandas
     });
-
   } catch (error) {
     res.status(500).json({
       sucesso: false,
@@ -22,70 +21,90 @@ const getComandas = async (req, res) => {
   }
 };
 
+async function buscarNomeItens(itemId){
+    try{
+      const fetchDadosItem = await fetch(`http://localhost:4000/api/cardapio/${itemId}`);
 
-/**
- * POST - Criar nova comanda
- */
-const createComanda = async (req, res) => {
-  try {
-    const { mesa, itens } = req.body;
-
-    // Validações
-    if (!mesa) {
-      return res.status(400).json({
-        sucesso: false,
-        mensagem: 'Mesa é obrigatória'
-      });
-    }
-
-    if (!itens || itens.length === 0) {
-      return res.status(400).json({
-        sucesso: false,
-        mensagem: 'Itens são obrigatórios'
-      });
-    }
-
-    let total = 0;
-    let itensDetalhados = [];
-
-    // Buscar cada item no cardápio
-    for (let itemId of itens) {
-      const [produto] = await db.execute(
-        'SELECT id, nome, preco FROM cardapio WHERE id = ?',
-        [itemId]
-      );
-
-      if (produto.length === 0) {
-        return res.status(404).json({
-          sucesso: false,
-          mensagem: `Item com ID ${itemId} não encontrado no cardápio`
-        });
+      if(!fetchDadosItem){
+        throw new Error("Erro ao dar fetch nos dados do item");
       }
+      const response = await fetchDadosItem.json();
+      console.log("Response akljhajkfhafjkha", response);
+      return response.nome;
+    } catch (e){
+      console.log("Error ", e);
+    }
+}
 
-      total += Number(produto[0].preco);
 
-      itensDetalhados.push({
-        id: produto[0].id,
-        nome: produto[0].nome,
-        preco: produto[0].preco
-      });
+
+// Função que cria uma nova comanda (pedido)
+// Recebe os dados do pedido do cliente via req.body
+const createComanda = (req, res) => {
+  try {
+    // Extrai os dados enviados pelo cliente
+    const { mesa, itens, total } = req.body;
+    const fetchItensCardapio = [];
+    let listaQuantItens = {};
+    
+    itens.forEach(async (item) => {
+      let nomeItem = await buscarNomeItens(item)
+
+      if(fetchItensCardapio.includes(nomeItem)){
+        const posItem = fetchItensCardapio.indexOf(nomeItem);
+        fetchItensCardapio[posItem] = (nomeItem)
+        listaQuantItens[nomeItem] += 1;
+
+      } else {
+        fetchItensCardapio.push(nomeItem)
+        listaQuantItens[nomeItem] = 1; 
+      }
+      
+    })
+
+    
+
+    if(!mesa || mesa === ""){
+      res.status(400).json({
+        sucesso: false,
+        mensagem: `Não foi possivel criar comanda, mesa não informada`
+      })
     }
 
-    // Inserir no banco
-    const [result] = await db.execute(
-      `INSERT INTO comandas 
-      (mesa, status, itens, total, criado_em, atualizado_em)
-      VALUES (?, ?, ?, ?, NOW(), NOW())`,
-      [mesa, 'pendente', JSON.stringify(itensDetalhados), total]
-    );
+    if(!itens || itens.length === 0){
+      res.status(400).json({
+        sucesso: false,
+        mensagem: `Não foi possivel criar comanda pois itens = ${itens}`
+      })
+    }
 
+
+    if(total <= 0){
+      res.status(400).json({
+        sucesso: false,
+        mensagem: `Não foi possível criar comanda, valor total inválido`
+      })
+    }
+    // Cria um novo objeto de comanda
+    const novaComanda = {
+      id: comandas.length + 1, // ID automático baseado no tamanho do array
+      mesa,
+      fetchItensCardapio,
+      listaQuantItens,
+      total,
+      status: "pendente",
+      dataPedido: new Date().toISOString()
+    };
+
+    // Adiciona a nova comanda ao array
+    comandas.push(novaComanda);
+
+    // Retorna a comanda criada com status 201 (Created)
     res.status(201).json({
       sucesso: true,
       mensagem: 'Comanda criada com sucesso',
-      id: result.insertId,
-      total
+      dados: novaComanda
     });
-
   } catch (error) {
     res.status(500).json({
       sucesso: false,
@@ -95,41 +114,41 @@ const createComanda = async (req, res) => {
   }
 };
 
-
-/**
- * PATCH - Atualizar status da comanda
- */
-const updateComandaStatus = async (req, res) => {
+// Função para atualizar o status de uma comanda (PATCH)
+// Permite mudar o status de um pedido (ex: pendente → Em Preparo → Pronto)
+const updateComandaStatus = (req, res) => {
   try {
-    const { id } = req.params;
-    const { status } = req.body;
+    const { id } = req.params; // Pega o ID da URL
+    const { status } = req.body; // Pega o novo status do corpo da requisição
 
+    // Validação: verifica se o status foi enviado
     if (!status) {
       return res.status(400).json({
         sucesso: false,
-        mensagem: 'Status é obrigatório'
+        mensagem: 'Status é obrigatório para atualizar a comanda'
       });
     }
 
-    const [result] = await db.execute(
-      'UPDATE comandas SET status = ?, atualizado_em = NOW() WHERE id = ?',
-      [status, id]
-    );
+    // Encontra o índice da comanda no array
+    // Usamos == (comparação fraca) para permitir '1' == 1
+    const comandaIndex = comandas.findIndex(c => c.id == id);
 
-    if (result.affectedRows === 0) {
+    // Se não encontrar (índice -1), retorna 404
+    if (comandaIndex === -1) {
       return res.status(404).json({
         sucesso: false,
-        mensagem: 'Comanda não encontrada'
+        mensagem: 'Comanda não encontrada.'
       });
     }
 
-    res.status(200).json({
-      sucesso: true,
-      mensagem: 'Status atualizado com sucesso'
-    });
+    // Atualiza o status da comanda encontrada
+    comandas[comandaIndex].status = status;
+
+    // Retorna a comanda inteira atualizada com status 200 (OK)
+    return res.status(200).json(comandas[comandaIndex]);
 
   } catch (error) {
-    res.status(500).json({
+    return res.status(500).json({
       sucesso: false,
       mensagem: 'Erro ao atualizar comanda',
       erro: error.message
@@ -137,33 +156,36 @@ const updateComandaStatus = async (req, res) => {
   }
 };
 
-
-/**
- * DELETE - Remover comanda
- */
-const deleteComanda = async (req, res) => {
+// Função para deletar uma comanda (DELETE)
+// Remove um pedido do sistema (ex: cancelamento, limpeza de pedidos antigos)
+const deleteComanda = (req, res) => {
   try {
-    const { id } = req.params;
+    const { id } = req.params; // Pega o ID da URL
 
-    const [result] = await db.execute(
-      'DELETE FROM comandas WHERE id = ?',
-      [id]
-    );
+    // Encontra o índice da comanda no array
+    // Usamos == (comparação fraca) para permitir '1' == 1
+    const comandaIndex = comandas.findIndex(c => c.id == id);
 
-    if (result.affectedRows === 0) {
+    // Se não encontrar (índice -1), retorna 404
+    if (comandaIndex === -1) {
       return res.status(404).json({
         sucesso: false,
-        mensagem: 'Comanda não encontrada'
+        mensagem: 'Comanda não encontrada.'
       });
     }
 
-    res.status(200).json({
+    // Remove a comanda do array usando splice
+    // splice(índice, quantosRemover) - remove 1 elemento no índice encontrado
+    comandas.splice(comandaIndex, 1);
+
+    // Retorna sucesso com status 200 (OK)
+    return res.status(200).json({
       sucesso: true,
       mensagem: 'Comanda deletada com sucesso'
     });
 
   } catch (error) {
-    res.status(500).json({
+    return res.status(500).json({
       sucesso: false,
       mensagem: 'Erro ao deletar comanda',
       erro: error.message
@@ -171,10 +193,10 @@ const deleteComanda = async (req, res) => {
   }
 };
 
-
+// Exporta as funções para serem usadas nas rotas
 module.exports = {
   getComandas,
   createComanda,
   updateComandaStatus,
-  deleteComanda
+  deleteComanda 
 };
