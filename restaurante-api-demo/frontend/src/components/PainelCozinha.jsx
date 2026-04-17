@@ -28,6 +28,18 @@ function normalizarItens(itens) {
     .filter((id) => Number.isFinite(id) && id > 0);
 }
 
+function pegarNomeCliente(comanda) {
+  return (
+    comanda?.usuario?.nome ||
+    comanda?.cliente?.nome ||
+    comanda?.user?.nome ||
+    comanda?.nome_cliente ||
+    comanda?.cliente_nome ||
+    comanda?.usuario_nome ||
+    "Cliente não informado"
+  );
+}
+
 export function PainelCozinha({ refreshTrigger }) {
   const [comandas, setComandas] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -203,6 +215,10 @@ export function PainelCozinha({ refreshTrigger }) {
           {comandas.map((comanda) => (
             <div key={comanda.id} className="cozinha-pedido">
               <h3>Pedido #{comanda.id}</h3>
+
+              <p className="cozinha-cliente">
+                <strong>👤 Cliente:</strong> {pegarNomeCliente(comanda)}
+              </p>
 
               <p className="cozinha-tipo">
                 <strong>Tipo:</strong> {formatarTipoPedido(comanda.tipo_pedido)}

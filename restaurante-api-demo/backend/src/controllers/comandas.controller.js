@@ -19,6 +19,7 @@ const getComandas = async (req, res) => {
       SELECT 
         c.id,
         c.usuario_id,
+        u.nome AS usuario_nome,
         c.mesa,
         c.mesa_id,
         c.tipo_pedido,
@@ -30,6 +31,7 @@ const getComandas = async (req, res) => {
         c.criado_em,
         c.atualizado_em
       FROM comandas c
+      LEFT JOIN usuarios u ON c.usuario_id = u.id
       ORDER BY c.id DESC
       `
     );
@@ -63,6 +65,7 @@ const getMinhasComandas = async (req, res) => {
       SELECT 
         c.id,
         c.usuario_id,
+        u.nome AS usuario_nome,
         c.mesa,
         c.mesa_id,
         c.tipo_pedido,
@@ -74,6 +77,7 @@ const getMinhasComandas = async (req, res) => {
         c.criado_em,
         c.atualizado_em
       FROM comandas c
+      LEFT JOIN usuarios u ON c.usuario_id = u.id
       WHERE c.usuario_id = ?
       ORDER BY c.id DESC
       `,
@@ -231,20 +235,22 @@ const createComanda = async (req, res) => {
     const [rows] = await pool.query(
       `
       SELECT 
-        id,
-        usuario_id,
-        mesa,
-        mesa_id,
-        tipo_pedido,
-        endereco,
-        forma_pagamento,
-        status,
-        itens,
-        total,
-        criado_em,
-        atualizado_em
-      FROM comandas
-      WHERE id = ?
+        c.id,
+        c.usuario_id,
+        u.nome AS usuario_nome,
+        c.mesa,
+        c.mesa_id,
+        c.tipo_pedido,
+        c.endereco,
+        c.forma_pagamento,
+        c.status,
+        c.itens,
+        c.total,
+        c.criado_em,
+        c.atualizado_em
+      FROM comandas c
+      LEFT JOIN usuarios u ON c.usuario_id = u.id
+      WHERE c.id = ?
       `,
       [resultado.insertId]
     );
@@ -349,20 +355,22 @@ const updateComandaStatus = async (req, res) => {
     const [rows] = await pool.query(
       `
       SELECT 
-        id,
-        usuario_id,
-        mesa,
-        mesa_id,
-        tipo_pedido,
-        endereco,
-        forma_pagamento,
-        status,
-        itens,
-        total,
-        criado_em,
-        atualizado_em
-      FROM comandas
-      WHERE id = ?
+        c.id,
+        c.usuario_id,
+        u.nome AS usuario_nome,
+        c.mesa,
+        c.mesa_id,
+        c.tipo_pedido,
+        c.endereco,
+        c.forma_pagamento,
+        c.status,
+        c.itens,
+        c.total,
+        c.criado_em,
+        c.atualizado_em
+      FROM comandas c
+      LEFT JOIN usuarios u ON c.usuario_id = u.id
+      WHERE c.id = ?
       `,
       [id]
     );

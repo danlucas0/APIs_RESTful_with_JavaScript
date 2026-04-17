@@ -94,6 +94,16 @@ export function MeusPedidos({ refreshTrigger }) {
     return mapa[tipo] || tipo;
   };
 
+  const formatarPagamento = (forma) => {
+    const mapa = {
+      pix: "Pix",
+      cartao: "Cartão",
+      dinheiro: "Dinheiro",
+    };
+
+    return mapa[forma] || forma;
+  };
+
   const classeStatus = (status) => {
     return `meu-pedido-status status-${status}`;
   };
@@ -102,7 +112,7 @@ export function MeusPedidos({ refreshTrigger }) {
     <section className="meus-pedidos-secao">
       <div className="meus-pedidos-topo">
         <span className="meus-pedidos-badge">Acompanhe em tempo real</span>
-        <h2>📦 Meus Pedidos</h2>
+        <h2>📦 Meus pedidos</h2>
         <p>Veja o andamento dos pedidos feitos na sua conta.</p>
       </div>
 
@@ -143,16 +153,15 @@ export function MeusPedidos({ refreshTrigger }) {
                 {pedido.tipo_pedido === "local" && pedido.mesa && (
                   <span>Mesa {pedido.mesa}</span>
                 )}
-                <span>R$ {Number(pedido.total).toFixed(2)}</span>
+
+                <span className="meu-pedido-total">
+                  R$ {Number(pedido.total).toFixed(2)}
+                </span>
               </div>
 
               <div className="meu-pedido-info">
                 <p>
-                  <strong>Pagamento:</strong> {pedido.forma_pagamento === "pix"
-                    ? "Pix"
-                    : pedido.forma_pagamento === "cartao"
-                    ? "Cartão"
-                    : "Dinheiro"}
+                  <strong>Pagamento:</strong> {formatarPagamento(pedido.forma_pagamento)}
                 </p>
 
                 <p>
@@ -170,7 +179,7 @@ export function MeusPedidos({ refreshTrigger }) {
               </div>
 
               <div className="meu-pedido-itens">
-                <strong className="titulo-itens">Itens</strong>
+                <strong className="titulo-itens">Itens do pedido</strong>
 
                 {Array.isArray(pedido.itensDetalhados) &&
                 pedido.itensDetalhados.length > 0 ? (

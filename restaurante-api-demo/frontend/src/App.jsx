@@ -241,11 +241,17 @@ function App() {
     return (
       <div className="App">
         <div className="topo-usuario">
-          <div className="topo-usuario-info">
-            <span className="topo-usuario-badge">
-              {isAdmin ? "Administrador" : "Cliente"}
-            </span>
-            <strong>{usuarioLogado?.nome}</strong>
+          <div className="topo-usuario-esquerda">
+            <div className="user-avatar">
+              {usuarioLogado?.nome?.charAt(0)?.toUpperCase() || "U"}
+            </div>
+
+            <div className="topo-usuario-info">
+              <span className="topo-usuario-badge">
+                {isAdmin ? "Administrador" : "Cliente"}
+              </span>
+              <strong>{usuarioLogado?.nome}</strong>
+            </div>
           </div>
 
           <button type="button" className="btn-logout" onClick={handleLogout}>
@@ -253,8 +259,11 @@ function App() {
           </button>
         </div>
 
-        <h1>🍽️ Restaurante Sabor da Casa</h1>
-        <div className="loading">Carregando o cardápio...</div>
+        <div className="hero-topo">
+          <span className="hero-badge">Atendimento rápido • Pedido digital</span>
+          <h1>🍽️ Restaurante Sabor da Casa</h1>
+          <p className="subtitle">Carregando o cardápio...</p>
+        </div>
       </div>
     );
   }
@@ -263,35 +272,29 @@ function App() {
     return (
       <div className="App">
         <div className="topo-usuario">
-          <div className="topo-usuario-info">
-            <span className="topo-usuario-badge">
-              {isAdmin ? "Administrador" : "Cliente"}
-            </span>
-            <strong>{usuarioLogado?.nome}</strong>
+          <div className="topo-usuario-esquerda">
+            <div className="user-avatar">
+              {usuarioLogado?.nome?.charAt(0)?.toUpperCase() || "U"}
+            </div>
+
+            <div className="topo-usuario-info">
+              <span className="topo-usuario-badge">
+                {isAdmin ? "Administrador" : "Cliente"}
+              </span>
+              <strong>{usuarioLogado?.nome}</strong>
+            </div>
           </div>
-          <div className="user-bar">
-  <div className="user-info">
-    <div className="user-avatar">
-      {usuario?.nome?.charAt(0).toUpperCase()}
-    </div>
 
-    <div>
-      <p className="user-nome">{usuario?.nome}</p>
-      <span className="user-role">
-        {usuario?.role === "admin" ? "Admin" : "Cliente"}
-      </span>
-    </div>
-  </div>
-
-  <button className="btn-logout" onClick={handleLogout}>
-    Sair
-  </button>
-</div>
-
-
+          <button type="button" className="btn-logout" onClick={handleLogout}>
+            Sair
+          </button>
         </div>
 
-        <h1>🍽️ Restaurante Sabor da Casa</h1>
+        <div className="hero-topo">
+          <span className="hero-badge">Atendimento rápido • Pedido digital</span>
+          <h1>🍽️ Restaurante Sabor da Casa</h1>
+        </div>
+
         <div className="error">
           <p>❌ Erro: o back-end não respondeu.</p>
           <p>Verifique se o servidor está rodando em http://localhost:4000</p>
@@ -304,11 +307,17 @@ function App() {
     <>
       <div className="App">
         <div className="topo-usuario">
-          <div className="topo-usuario-info">
-            <span className="topo-usuario-badge">
-              {isAdmin ? "Administrador" : "Cliente"}
-            </span>
-            <strong>{usuarioLogado?.nome}</strong>
+          <div className="topo-usuario-esquerda">
+            <div className="user-avatar">
+              {usuarioLogado?.nome?.charAt(0)?.toUpperCase() || "U"}
+            </div>
+
+            <div className="topo-usuario-info">
+              <span className="topo-usuario-badge">
+                {isAdmin ? "Administrador" : "Cliente"}
+              </span>
+              <strong>{usuarioLogado?.nome}</strong>
+            </div>
           </div>
 
           <button type="button" className="btn-logout" onClick={handleLogout}>
@@ -320,41 +329,22 @@ function App() {
           <span className="hero-badge">Atendimento rápido • Pedido digital</span>
           <h1>🍽️ Cardápio do Restaurante</h1>
           <p className="subtitle">
-            Escolha seus pratos, defina o tipo do pedido e finalize em poucos passos.
+            Escolha seus pratos e finalize seu pedido no carrinho.
           </p>
         </div>
 
-        <div className="info-pedido">
-          <div className="info-card">
-            <span className="info-label">Tipo do pedido</span>
-            <strong>
-              {tipoPedido === "local"
-                ? "Local"
-                : tipoPedido === "retirada"
-                ? "Retirada"
-                : "Entrega"}
-            </strong>
-          </div>
-
-          <div className="info-card">
-            <span className="info-label">Seleção atual</span>
-            <strong>{textoResumoPedido()}</strong>
-          </div>
-
-          <div className="info-card">
-            <span className="info-label">Pagamento</span>
-            <strong>{textoPagamento()}</strong>
-          </div>
-
-          <div className="info-card destaque-total">
-            <span className="info-label">Total parcial</span>
-            <strong>R$ {calcularTotalComanda.toFixed(2)}</strong>
-          </div>
-        </div>
-
         <div className="secao-titulo">
-          <h2>Nosso cardápio</h2>
-          <p>Monte seu pedido do seu jeito.</p>
+          <div>
+            <h2>Nosso cardápio</h2>
+            <p>Monte seu pedido do seu jeito.</p>
+          </div>
+
+          {comanda.length > 0 && (
+            <div className="resumo-inline">
+              <span>{totalItensPedido} item(ns)</span>
+              <strong>R$ {calcularTotalComanda.toFixed(2)}</strong>
+            </div>
+          )}
         </div>
 
         <div className="cardapio-lista">
@@ -405,11 +395,11 @@ function App() {
           })}
         </div>
 
-{isAdmin ? (
-  <PainelCozinha refreshTrigger={refreshPedidos} />
-) : (
-  <MeusPedidos refreshTrigger={refreshPedidos} />
-)}
+        {isAdmin ? (
+          <PainelCozinha refreshTrigger={refreshPedidos} />
+        ) : (
+          <MeusPedidos refreshTrigger={refreshPedidos} />
+        )}
       </div>
 
       {comanda.length > 0 && (
@@ -431,7 +421,7 @@ function App() {
         <div className="carrinho-lateral-topo">
           <div>
             <span className="mini-etiqueta">Finalização do pedido</span>
-            <h3>🛒 Sua Comanda</h3>
+            <h3>🛒 Seu carrinho</h3>
           </div>
 
           <button
@@ -575,7 +565,7 @@ function App() {
         <div className="comanda-lista lateral">
           {comanda.length === 0 ? (
             <p className="comanda-vazia">
-              Seu carrinho está vazio. Adicione itens do cardápio!
+              Seu carrinho está vazio. Adicione itens do cardápio.
             </p>
           ) : (
             comanda.map((item) => (
