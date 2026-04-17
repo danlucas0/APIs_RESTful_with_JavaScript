@@ -8,6 +8,19 @@ const api = axios.create({
   timeout: 10000,
 });
 
+api.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem("token");
+
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
+
 export const getCardapio = () => {
   return api.get("/cardapio");
 };
@@ -24,6 +37,10 @@ export const getComandas = () => {
   return api.get("/comandas");
 };
 
+export const getMinhasComandas = () => {
+  return api.get("/comandas/minhas");
+};
+
 export const updateComandaStatus = (id, novoStatus) => {
   return api.patch(`/comandas/${id}`, { status: novoStatus });
 };
@@ -32,6 +49,8 @@ export const deleteComanda = (id) => {
   return api.delete(`/comandas/${id}`);
 };
 
-export const getMesas = () => api.get("/mesas");
+export const getMesas = () => {
+  return api.get("/mesas");
+};
 
 export default api;

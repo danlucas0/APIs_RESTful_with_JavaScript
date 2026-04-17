@@ -1,0 +1,242 @@
+.meus-pedidos-secao {
+  margin-top: 34px;
+  background: linear-gradient(135deg, #ffffff, #f8fafc);
+  border: 1px solid #e2e8f0;
+  border-radius: 24px;
+  padding: 24px;
+  box-shadow: 0 16px 30px rgba(15, 23, 42, 0.06);
+}
+
+.meus-pedidos-topo {
+  text-align: center;
+  margin-bottom: 22px;
+}
+
+.meus-pedidos-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #fff7ed;
+  color: #ea580c;
+  border: 1px solid #fdba74;
+  border-radius: 999px;
+  padding: 7px 13px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  margin-bottom: 12px;
+}
+
+.meus-pedidos-topo h2 {
+  margin: 0 0 6px;
+  color: #0f172a;
+  font-size: 1.8rem;
+}
+
+.meus-pedidos-topo p {
+  margin: 0;
+  color: #64748b;
+  font-size: 0.96rem;
+}
+
+.meus-pedidos-loading,
+.meus-pedidos-vazio {
+  text-align: center;
+  padding: 22px;
+  color: #64748b;
+  font-weight: 600;
+}
+
+.meus-pedidos-erro {
+  background: #fee2e2;
+  color: #b91c1c;
+  border-radius: 14px;
+  padding: 14px;
+  text-align: center;
+  font-weight: 700;
+}
+
+.meus-pedidos-lista {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 14px;
+}
+
+.meu-pedido-card {
+  background: linear-gradient(180deg, #ffffff, #f8fafc);
+  border: 1px solid #dde6ef;
+  border-radius: 20px;
+  padding: 16px;
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.05);
+}
+
+.meu-pedido-cabecalho {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.meu-pedido-cabecalho-esquerda h3 {
+  margin: 0 0 4px;
+  color: #0f172a;
+  font-size: 1.1rem;
+}
+
+.meu-pedido-cabecalho-esquerda p {
+  margin: 0;
+  color: #64748b;
+  font-size: 0.92rem;
+}
+
+.meu-pedido-status {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 7px 12px;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.status-pendente {
+  background: rgba(245, 158, 11, 0.14);
+  color: #d97706;
+  border: 1px solid rgba(245, 158, 11, 0.28);
+}
+
+.status-em_preparo {
+  background: rgba(59, 130, 246, 0.14);
+  color: #2563eb;
+  border: 1px solid rgba(59, 130, 246, 0.28);
+}
+
+.status-pronto {
+  background: rgba(34, 197, 94, 0.14);
+  color: #16a34a;
+  border: 1px solid rgba(34, 197, 94, 0.28);
+}
+
+.status-saiu_entrega {
+  background: rgba(139, 92, 246, 0.14);
+  color: #7c3aed;
+  border: 1px solid rgba(139, 92, 246, 0.28);
+}
+
+.status-entregue {
+  background: rgba(16, 185, 129, 0.14);
+  color: #059669;
+  border: 1px solid rgba(16, 185, 129, 0.28);
+}
+
+.status-cancelado {
+  background: rgba(239, 68, 68, 0.14);
+  color: #dc2626;
+  border: 1px solid rgba(239, 68, 68, 0.28);
+}
+
+.meu-pedido-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+
+.meu-pedido-meta span {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  color: #0f172a;
+  border-radius: 12px;
+  padding: 8px 10px;
+  font-size: 0.88rem;
+  font-weight: 700;
+}
+
+.meu-pedido-info {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.meu-pedido-info p {
+  margin: 0;
+  color: #334155;
+  font-size: 0.92rem;
+  line-height: 1.4;
+}
+
+.meu-pedido-itens {
+  border-top: 1px solid #e2e8f0;
+  padding-top: 12px;
+}
+
+.titulo-itens {
+  display: block;
+  margin-bottom: 10px;
+  color: #0f172a;
+  font-size: 0.95rem;
+}
+
+.meu-pedido-itens-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.meu-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  background: #f8fafc;
+  border: 1px solid #edf2f7;
+  border-radius: 12px;
+}
+
+.meu-item-nome {
+  color: #0f172a;
+  font-weight: 700;
+  font-size: 0.92rem;
+}
+
+.meu-item-qtd {
+  min-width: 40px;
+  text-align: center;
+  background: #fff7ed;
+  color: #ea580c;
+  border: 1px solid #fdba74;
+  border-radius: 999px;
+  padding: 5px 9px;
+  font-weight: 800;
+  font-size: 0.82rem;
+}
+
+.meu-pedido-sem-itens {
+  margin: 0;
+  color: #64748b;
+  font-size: 0.9rem;
+}
+
+@media (max-width: 700px) {
+  .meus-pedidos-secao {
+    padding: 18px 14px;
+    border-radius: 20px;
+  }
+
+  .meus-pedidos-topo h2 {
+    font-size: 1.5rem;
+  }
+
+  .meus-pedidos-lista {
+    grid-template-columns: 1fr;
+  }
+
+  .meu-pedido-cabecalho {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}

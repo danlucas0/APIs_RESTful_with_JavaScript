@@ -1,9 +1,16 @@
 import { useEffect, useMemo, useState } from "react";
 import { getCardapio, createComanda, getMesas } from "./services/api";
 import { PainelCozinha } from "./components/PainelCozinha";
+import { Login } from "./components/Login";
 import "./App.css";
+import { MeusPedidos } from "./components/MeusPedidos";
 
 function App() {
+  const [usuarioLogado, setUsuarioLogado] = useState(() => {
+    const usuarioSalvo = localStorage.getItem("user");
+    return usuarioSalvo ? JSON.parse(usuarioSalvo) : null;
+  });
+
   const [cardapio, setCardapio] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -18,7 +25,11 @@ function App() {
   const [enderecoEntrega, setEnderecoEntrega] = useState("");
   const [formaPagamento, setFormaPagamento] = useState("pix");
 
+  const isAdmin = usuarioLogado?.role === "admin";
+
   useEffect(() => {
+    if (!usuarioLogado) return;
+
     const fetchCardapio = async () => {
       try {
         setLoading(true);
@@ -36,9 +47,11 @@ function App() {
     };
 
     fetchCardapio();
-  }, []);
+  }, [usuarioLogado]);
 
   useEffect(() => {
+    if (!usuarioLogado) return;
+
     const fetchMesas = async () => {
       if (tipoPedido !== "local") {
         setMesaSelecionada(null);
@@ -55,7 +68,18 @@ function App() {
     };
 
     fetchMesas();
-  }, [tipoPedido, refreshPedidos]);
+  }, [tipoPedido, refreshPedidos, usuarioLogado]);
+
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    setUsuarioLogado(null);
+    setComanda([]);
+    setCarrinhoAberto(false);
+    setMesaSelecionada(null);
+    setEnderecoEntrega("");
+    setFormaPagamento("pix");
+  };
 
   const handleAddItemComanda = (item) => {
     setComanda((prevComanda) => {
@@ -209,9 +233,26 @@ function App() {
     }
   };
 
+  if (!usuarioLogado) {
+    return <Login onLoginSuccess={setUsuarioLogado} />;
+  }
+
   if (loading) {
     return (
       <div className="App">
+        <div className="topo-usuario">
+          <div className="topo-usuario-info">
+            <span className="topo-usuario-badge">
+              {isAdmin ? "Administrador" : "Cliente"}
+            </span>
+            <strong>{usuarioLogado?.nome}</strong>
+          </div>
+
+          <button type="button" className="btn-logout" onClick={handleLogout}>
+            Sair
+          </button>
+        </div>
+
         <h1>🍽️ Restaurante Sabor da Casa</h1>
         <div className="loading">Carregando o cardápio...</div>
       </div>
@@ -221,6 +262,35 @@ function App() {
   if (error) {
     return (
       <div className="App">
+        <div className="topo-usuario">
+          <div className="topo-usuario-info">
+            <span className="topo-usuario-badge">
+              {isAdmin ? "Administrador" : "Cliente"}
+            </span>
+            <strong>{usuarioLogado?.nome}</strong>
+          </div>
+          <div className="user-bar">
+  <div className="user-info">
+    <div className="user-avatar">
+      {usuario?.nome?.charAt(0).toUpperCase()}
+    </div>
+
+    <div>
+      <p className="user-nome">{usuario?.nome}</p>
+      <span className="user-role">
+        {usuario?.role === "admin" ? "Admin" : "Cliente"}
+      </span>
+    </div>
+  </div>
+
+  <button className="btn-logout" onClick={handleLogout}>
+    Sair
+  </button>
+</div>
+
+
+        </div>
+
         <h1>🍽️ Restaurante Sabor da Casa</h1>
         <div className="error">
           <p>❌ Erro: o back-end não respondeu.</p>
@@ -233,6 +303,19 @@ function App() {
   return (
     <>
       <div className="App">
+        <div className="topo-usuario">
+          <div className="topo-usuario-info">
+            <span className="topo-usuario-badge">
+              {isAdmin ? "Administrador" : "Cliente"}
+            </span>
+            <strong>{usuarioLogado?.nome}</strong>
+          </div>
+
+          <button type="button" className="btn-logout" onClick={handleLogout}>
+            Sair
+          </button>
+        </div>
+
         <div className="hero-topo">
           <span className="hero-badge">Atendimento rápido • Pedido digital</span>
           <h1>🍽️ Cardápio do Restaurante</h1>
@@ -322,7 +405,11 @@ function App() {
           })}
         </div>
 
-        <PainelCozinha refreshTrigger={refreshPedidos} />
+{isAdmin ? (
+  <PainelCozinha refreshTrigger={refreshPedidos} />
+) : (
+  <MeusPedidos refreshTrigger={refreshPedidos} />
+)}
       </div>
 
       {comanda.length > 0 && (

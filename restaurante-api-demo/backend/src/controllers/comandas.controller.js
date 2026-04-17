@@ -1,10 +1,24 @@
 const pool = require("../services/database");
 
+const parseItens = (itens) => {
+  if (typeof itens === "string") {
+    try {
+      return JSON.parse(itens);
+    } catch {
+      return [];
+    }
+  }
+
+  return Array.isArray(itens) ? itens : [];
+};
+
 const getComandas = async (req, res) => {
   try {
-    const [rows] = await pool.query(`
+    const [rows] = await pool.query(
+      `
       SELECT 
         c.id,
+        c.usuario_id,
         c.mesa,
         c.mesa_id,
         c.tipo_pedido,
@@ -17,14 +31,12 @@ const getComandas = async (req, res) => {
         c.atualizado_em
       FROM comandas c
       ORDER BY c.id DESC
-    `);
+      `
+    );
 
     const comandasFormatadas = rows.map((comanda) => ({
       ...comanda,
-      itens:
-        typeof comanda.itens === "string"
-          ? JSON.parse(comanda.itens)
-          : comanda.itens,
+      itens: parseItens(comanda.itens),
     }));
 
     return res.status(200).json({
@@ -42,8 +54,56 @@ const getComandas = async (req, res) => {
   }
 };
 
+const getMinhasComandas = async (req, res) => {
+  try {
+    const usuarioId = req.usuario.id;
+
+    const [rows] = await pool.query(
+      `
+      SELECT 
+        c.id,
+        c.usuario_id,
+        c.mesa,
+        c.mesa_id,
+        c.tipo_pedido,
+        c.endereco,
+        c.forma_pagamento,
+        c.status,
+        c.itens,
+        c.total,
+        c.criado_em,
+        c.atualizado_em
+      FROM comandas c
+      WHERE c.usuario_id = ?
+      ORDER BY c.id DESC
+      `,
+      [usuarioId]
+    );
+
+    const comandasFormatadas = rows.map((comanda) => ({
+      ...comanda,
+      itens: parseItens(comanda.itens),
+    }));
+
+    return res.status(200).json({
+      sucesso: true,
+      mensagem: "Minhas comandas recuperadas com sucesso",
+      quantidade: comandasFormatadas.length,
+      dados: comandasFormatadas,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      sucesso: false,
+      mensagem: "Erro ao buscar minhas comandas",
+      erro: error.message,
+    });
+  }
+};
+
 const createComanda = async (req, res) => {
   try {
+    const usuario_id = req.usuario.id;
+
     const {
       tipo_pedido,
       mesa_id,
@@ -143,6 +203,7 @@ const createComanda = async (req, res) => {
     const [resultado] = await pool.query(
       `
       INSERT INTO comandas (
+        usuario_id,
         mesa,
         mesa_id,
         tipo_pedido,
@@ -152,9 +213,10 @@ const createComanda = async (req, res) => {
         itens,
         total
       )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
       `,
       [
+        usuario_id,
         mesaNumero,
         mesaIdFinal,
         tipo_pedido,
@@ -170,6 +232,7 @@ const createComanda = async (req, res) => {
       `
       SELECT 
         id,
+        usuario_id,
         mesa,
         mesa_id,
         tipo_pedido,
@@ -189,10 +252,7 @@ const createComanda = async (req, res) => {
     const novaComanda = rows[0]
       ? {
           ...rows[0],
-          itens:
-            typeof rows[0].itens === "string"
-              ? JSON.parse(rows[0].itens)
-              : rows[0].itens,
+          itens: parseItens(rows[0].itens),
         }
       : null;
 
@@ -226,6 +286,7 @@ const updateComandaStatus = async (req, res) => {
       "pendente",
       "em_preparo",
       "pronto",
+      "saiu_entrega",
       "entregue",
       "cancelado",
     ];
@@ -239,7 +300,7 @@ const updateComandaStatus = async (req, res) => {
 
     const [comandaRows] = await pool.query(
       `
-      SELECT id, mesa_id
+      SELECT id, mesa_id, tipo_pedido
       FROM comandas
       WHERE id = ?
       `,
@@ -289,6 +350,7 @@ const updateComandaStatus = async (req, res) => {
       `
       SELECT 
         id,
+        usuario_id,
         mesa,
         mesa_id,
         tipo_pedido,
@@ -307,10 +369,7 @@ const updateComandaStatus = async (req, res) => {
 
     const comandaAtualizada = {
       ...rows[0],
-      itens:
-        typeof rows[0].itens === "string"
-          ? JSON.parse(rows[0].itens)
-          : rows[0].itens,
+      itens: parseItens(rows[0].itens),
     };
 
     return res.status(200).json({
@@ -390,6 +449,7 @@ const deleteComanda = async (req, res) => {
 
 module.exports = {
   getComandas,
+  getMinhasComandas,
   createComanda,
   updateComandaStatus,
   deleteComanda,
