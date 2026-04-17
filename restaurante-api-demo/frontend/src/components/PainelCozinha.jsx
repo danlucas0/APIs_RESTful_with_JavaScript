@@ -14,24 +14,15 @@ function normalizarItens(itens) {
   } else if (typeof itens === "string") {
     try {
       const parseado = JSON.parse(itens);
-      if (Array.isArray(parseado)) {
-        lista = parseado;
-      } else {
-        lista = [];
-      }
+      if (Array.isArray(parseado)) lista = parseado;
     } catch {
       lista = [];
     }
-  } else {
-    lista = [];
   }
 
   return lista
     .map((item) => {
-      if (typeof item === "object" && item !== null) {
-        return Number(item.id);
-      }
-
+      if (typeof item === "object" && item !== null) return Number(item.id);
       return Number(item);
     })
     .filter((id) => Number.isFinite(id) && id > 0);
@@ -157,6 +148,26 @@ export function PainelCozinha({ refreshTrigger }) {
     return mapa[status] || status;
   };
 
+  const formatarTipoPedido = (tipo) => {
+    const mapa = {
+      local: "Consumir no local",
+      retirada: "Retirada",
+      entrega: "Entrega",
+    };
+
+    return mapa[tipo] || tipo;
+  };
+
+  const formatarPagamento = (forma) => {
+    const mapa = {
+      pix: "Pix",
+      cartao: "Cartão",
+      dinheiro: "Dinheiro",
+    };
+
+    return mapa[forma] || forma;
+  };
+
   if (loading && comandas.length === 0) {
     return (
       <div className="cozinha-secao">
@@ -193,7 +204,26 @@ export function PainelCozinha({ refreshTrigger }) {
             <div key={comanda.id} className="cozinha-pedido">
               <h3>Pedido #{comanda.id}</h3>
 
-              <p className="cozinha-mesa">🪑 Mesa: {comanda.mesa}</p>
+              <p className="cozinha-tipo">
+                <strong>Tipo:</strong> {formatarTipoPedido(comanda.tipo_pedido)}
+              </p>
+
+              {comanda.tipo_pedido === "local" && comanda.mesa && (
+                <p className="cozinha-mesa">🪑 Mesa: {comanda.mesa}</p>
+              )}
+
+              {comanda.tipo_pedido === "entrega" && comanda.endereco && (
+                <p className="cozinha-endereco">
+                  <strong>📍 Endereço:</strong> {comanda.endereco}
+                </p>
+              )}
+
+              {comanda.forma_pagamento && (
+                <p className="cozinha-pagamento">
+                  <strong>💳 Pagamento:</strong>{" "}
+                  {formatarPagamento(comanda.forma_pagamento)}
+                </p>
+              )}
 
               <p className="cozinha-status">
                 Status:{" "}

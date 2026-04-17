@@ -3,9 +3,20 @@ const pool = require("../services/database");
 const getComandas = async (req, res) => {
   try {
     const [rows] = await pool.query(`
-      SELECT id, mesa, status, itens, total, criado_em, atualizado_em
-      FROM comandas
-      ORDER BY id DESC
+      SELECT 
+        c.id,
+        c.mesa,
+        c.mesa_id,
+        c.tipo_pedido,
+        c.endereco,
+        c.forma_pagamento,
+        c.status,
+        c.itens,
+        c.total,
+        c.criado_em,
+        c.atualizado_em
+      FROM comandas c
+      ORDER BY c.id DESC
     `);
 
     const comandasFormatadas = rows.map((comanda) => ({
@@ -33,40 +44,142 @@ const getComandas = async (req, res) => {
 
 const createComanda = async (req, res) => {
   try {
-    const { mesa, itens, total } = req.body;
+    const {
+      tipo_pedido,
+      mesa_id,
+      endereco,
+      forma_pagamento,
+      itens,
+      total,
+    } = req.body;
 
-    if (!mesa || Number(mesa) <= 0) {
+    const tiposValidos = ["local", "retirada", "entrega"];
+    const formasValidas = ["pix", "cartao", "dinheiro"];
+
+    if (!tipo_pedido || !tiposValidos.includes(tipo_pedido)) {
       return res.status(400).json({
         sucesso: false,
-        mensagem: "Não foi possível criar comanda, mesa não informada ou inválida",
+        mensagem: "Tipo de pedido inválido",
+      });
+    }
+
+    if (!forma_pagamento || !formasValidas.includes(forma_pagamento)) {
+      return res.status(400).json({
+        sucesso: false,
+        mensagem: "Forma de pagamento inválida",
       });
     }
 
     if (!Array.isArray(itens) || itens.length === 0) {
       return res.status(400).json({
         sucesso: false,
-        mensagem: "Não foi possível criar comanda, itens inválidos",
+        mensagem: "Itens inválidos",
       });
     }
 
     if (total == null || Number(total) < 0) {
       return res.status(400).json({
         sucesso: false,
-        mensagem: "Não foi possível criar comanda, valor total inválido",
+        mensagem: "Valor total inválido",
+      });
+    }
+
+    let mesaNumero = null;
+    let mesaIdFinal = null;
+
+    if (tipo_pedido === "local") {
+      if (!mesa_id || Number(mesa_id) <= 0) {
+        return res.status(400).json({
+          sucesso: false,
+          mensagem: "Mesa é obrigatória para consumo no local",
+        });
+      }
+
+      const [mesaRows] = await pool.query(
+        `
+        SELECT id, numero, status
+        FROM mesas
+        WHERE id = ?
+        `,
+        [mesa_id]
+      );
+
+      if (mesaRows.length === 0) {
+        return res.status(404).json({
+          sucesso: false,
+          mensagem: "Mesa não encontrada",
+        });
+      }
+
+      const mesa = mesaRows[0];
+
+      if (mesa.status !== "disponivel") {
+        return res.status(400).json({
+          sucesso: false,
+          mensagem: "Mesa já está ocupada",
+        });
+      }
+
+      await pool.query(
+        `
+        UPDATE mesas
+        SET status = 'ocupada'
+        WHERE id = ?
+        `,
+        [mesa_id]
+      );
+
+      mesaNumero = mesa.numero;
+      mesaIdFinal = mesa.id;
+    }
+
+    if (tipo_pedido === "entrega" && (!endereco || !endereco.trim())) {
+      return res.status(400).json({
+        sucesso: false,
+        mensagem: "Endereço é obrigatório para entrega",
       });
     }
 
     const [resultado] = await pool.query(
       `
-      INSERT INTO comandas (mesa, status, itens, total)
-      VALUES (?, ?, ?, ?)
+      INSERT INTO comandas (
+        mesa,
+        mesa_id,
+        tipo_pedido,
+        endereco,
+        forma_pagamento,
+        status,
+        itens,
+        total
+      )
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
       `,
-      [mesa, "pendente", JSON.stringify(itens), total]
+      [
+        mesaNumero,
+        mesaIdFinal,
+        tipo_pedido,
+        tipo_pedido === "entrega" ? endereco.trim() : null,
+        forma_pagamento,
+        "pendente",
+        JSON.stringify(itens),
+        total,
+      ]
     );
 
     const [rows] = await pool.query(
       `
-      SELECT id, mesa, status, itens, total, criado_em, atualizado_em
+      SELECT 
+        id,
+        mesa,
+        mesa_id,
+        tipo_pedido,
+        endereco,
+        forma_pagamento,
+        status,
+        itens,
+        total,
+        criado_em,
+        atualizado_em
       FROM comandas
       WHERE id = ?
       `,
@@ -124,6 +237,24 @@ const updateComandaStatus = async (req, res) => {
       });
     }
 
+    const [comandaRows] = await pool.query(
+      `
+      SELECT id, mesa_id
+      FROM comandas
+      WHERE id = ?
+      `,
+      [id]
+    );
+
+    if (comandaRows.length === 0) {
+      return res.status(404).json({
+        sucesso: false,
+        mensagem: "Comanda não encontrada.",
+      });
+    }
+
+    const comandaAtual = comandaRows[0];
+
     const [resultado] = await pool.query(
       `
       UPDATE comandas
@@ -140,9 +271,34 @@ const updateComandaStatus = async (req, res) => {
       });
     }
 
+    if (
+      (status === "entregue" || status === "cancelado") &&
+      comandaAtual.mesa_id
+    ) {
+      await pool.query(
+        `
+        UPDATE mesas
+        SET status = 'disponivel'
+        WHERE id = ?
+        `,
+        [comandaAtual.mesa_id]
+      );
+    }
+
     const [rows] = await pool.query(
       `
-      SELECT id, mesa, status, itens, total, criado_em, atualizado_em
+      SELECT 
+        id,
+        mesa,
+        mesa_id,
+        tipo_pedido,
+        endereco,
+        forma_pagamento,
+        status,
+        itens,
+        total,
+        criado_em,
+        atualizado_em
       FROM comandas
       WHERE id = ?
       `,
@@ -175,6 +331,24 @@ const deleteComanda = async (req, res) => {
   try {
     const { id } = req.params;
 
+    const [comandaRows] = await pool.query(
+      `
+      SELECT mesa_id
+      FROM comandas
+      WHERE id = ?
+      `,
+      [id]
+    );
+
+    if (comandaRows.length === 0) {
+      return res.status(404).json({
+        sucesso: false,
+        mensagem: "Comanda não encontrada.",
+      });
+    }
+
+    const mesaId = comandaRows[0].mesa_id;
+
     const [resultado] = await pool.query(
       `
       DELETE FROM comandas
@@ -188,6 +362,17 @@ const deleteComanda = async (req, res) => {
         sucesso: false,
         mensagem: "Comanda não encontrada.",
       });
+    }
+
+    if (mesaId) {
+      await pool.query(
+        `
+        UPDATE mesas
+        SET status = 'disponivel'
+        WHERE id = ?
+        `,
+        [mesaId]
+      );
     }
 
     return res.status(200).json({

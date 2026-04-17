@@ -32,4 +32,6 @@ export const deleteComanda = (id) => {
   return api.delete(`/comandas/${id}`);
 };
 
+export const getMesas = () => api.get("/mesas");
+
 export default api;
