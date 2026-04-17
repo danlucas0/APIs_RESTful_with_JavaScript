@@ -15,7 +15,7 @@ CREATE TABLE IF NOT EXISTS comandas (
   total DECIMAL(10, 2) NOT NULL CHECK (total >= 0),
   criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   atualizado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-)
+);
 
 
 CREATE INDEX idx_comandas_status ON comandas(status);

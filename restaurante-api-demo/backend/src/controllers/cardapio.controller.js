@@ -1,74 +1,60 @@
-// Controlador do Cardápio
-// Este arquivo é como o "Chef de Cozinha" que mostra o menu aos clientes
-
-const  db  = require('../services/database');
+const db = require("../services/database");
 
 const listarCardapio = async (req, res) => {
   try {
-    const [rows] = await db.query('SELECT * FROM cardapio');
-    
-    res.json({
+    const [rows] = await db.query("SELECT * FROM cardapio");
+
+    return res.status(200).json({
       sucesso: true,
-      dados: rows
+      mensagem: "Cardápio recuperado com sucesso",
+      dados: rows,
     });
-  } catch (erro){
-    console.error(erro); // Log para ajudar no debug do Render
-    res.status(500).json({ sucesso: false, mensagem: "Erro ao acessar banco"})
+  } catch (erro) {
+    console.error(erro);
+    return res.status(500).json({
+      sucesso: false,
+      mensagem: "Erro ao acessar banco",
+      erro: erro.message,
+    });
   }
 };
 
-// Função que retorna todo o cardápio
-// Quando o cliente pede para ver o menu, essa função é executada
-// const getCardapio = (req, res) => {
-//   try {
+const getCardapioItem = async (req, res) => {
+  try {
+    const id = Number(req.params.id);
 
-//     console.log("Veio buscar o cardápio")
-//     // Retorna o array do cardápio com status 200 (OK)
-//     res.status(200).json({
-//       sucesso: true,
-//       mensagem: 'Cardápio recuperado com sucesso',
-//       dados: cardapio
-//     });
-//   } catch (error) {
-//     // Se algo der errado, retorna erro 500
-//     res.status(500).json({
-//       sucesso: false,
-//       mensagem: 'Erro ao buscar cardápio',
-//       erro: error.message
-//     });
-//   }
-// };
+    if (!id || id <= 0) {
+      return res.status(400).json({
+        sucesso: false,
+        mensagem: "ID inválido",
+      });
+    }
 
-// // Função que retorna um item específico do cardápio pelo ID
-// // Busca um item usando o parâmetro de rota :id
-// const getCardapioItem = (req, res) => {
-//   try {
-//     // Pega o ID do parâmetro da URL e converte para número
-//     const id = parseInt(req.params.id);
+    const [rows] = await db.query("SELECT * FROM cardapio WHERE id = ?", [id]);
 
-//     // Busca o item no array do cardápio
-//     const item = cardapio.find(item => item.id === id);
+    if (rows.length === 0) {
+      return res.status(404).json({
+        sucesso: false,
+        mensagem: "Item não encontrado",
+      });
+    }
 
-//     // Se o item não foi encontrado, retorna 404
-//     if (!item) {
-//       return res.status(404).json({
-//         message: 'Item não encontrado'
-//       });
-//     }
+    return res.status(200).json({
+      sucesso: true,
+      mensagem: "Item do cardápio recuperado com sucesso",
+      dados: rows[0],
+    });
+  } catch (erro) {
+    console.error(erro);
+    return res.status(500).json({
+      sucesso: false,
+      mensagem: "Erro ao buscar item do cardápio",
+      erro: erro.message,
+    });
+  }
+};
 
-//     // Se encontrou, retorna o item
-//     res.status(200).json(item);
-//   } catch (error) {
-//     // Se algo der errado, retorna erro 500
-//     res.status(500).json({
-//       sucesso: false,
-//       mensagem: 'Erro ao buscar item do cardápio',
-//       erro: error.message
-//     });
-//   }
-// };
-
-// Exporta as funções para serem usadas nas rotas
 module.exports = {
-listarCardapio
- };
+  listarCardapio,
+  getCardapioItem,
+};

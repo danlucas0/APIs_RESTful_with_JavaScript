@@ -1,29 +1,100 @@
-import { useState, useEffect } from 'react';
-import { getComandas, updateComandaStatus, deleteComanda } from '../services/api';
-import { getCardapioItem } from '../services/api';
-// Componente que exibe todos os pedidos feitos (Painel da Cozinha)
-// Recebe a prop 'refreshTrigger' para saber quando atualizar a lista
+import { useEffect, useState } from "react";
+import {
+  deleteComanda,
+  getCardapioItem,
+  getComandas,
+  updateComandaStatus,
+} from "../services/api";
+
+function normalizarItens(itens) {
+  let lista = [];
+
+  if (Array.isArray(itens)) {
+    lista = itens;
+  } else if (typeof itens === "string") {
+    try {
+      const parseado = JSON.parse(itens);
+      if (Array.isArray(parseado)) {
+        lista = parseado;
+      } else {
+        lista = [];
+      }
+    } catch {
+      lista = [];
+    }
+  } else {
+    lista = [];
+  }
+
+  return lista
+    .map((item) => {
+      if (typeof item === "object" && item !== null) {
+        return Number(item.id);
+      }
+
+      return Number(item);
+    })
+    .filter((id) => Number.isFinite(id) && id > 0);
+}
+
 export function PainelCozinha({ refreshTrigger }) {
   const [comandas, setComandas] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // useEffect que busca os pedidos toda vez que o componente monta
-  // ou quando a prop 'refreshTrigger' muda (novo pedido foi feito)
   useEffect(() => {
     const fetchComandas = async () => {
-      setLoading(true); // Ativa o loading a cada atualização
       try {
+        setLoading(true);
+        setError(null);
+
         const response = await getComandas();
-        console.log('✅ Front-end: Pedidos recebidos!', response.data);
-        
-        // O back-end retorna { sucesso, mensagem, quantidade, dados }
-        const listaPedidos = response.data.dados || response.data;
-        
-        // Inverte a lista para mostrar os pedidos mais novos primeiro
-        setComandas([...listaPedidos]); 
+        const listaPedidos = response?.data?.dados ?? [];
+
+        const comandasComDetalhes = await Promise.all(
+          listaPedidos.map(async (comanda) => {
+            const itensIds = normalizarItens(comanda.itens);
+
+            const contagem = itensIds.reduce((acc, id) => {
+              acc[id] = (acc[id] || 0) + 1;
+              return acc;
+            }, {});
+
+            const idsUnicos = Object.keys(contagem)
+              .map((id) => Number(id))
+              .filter((id) => Number.isFinite(id) && id > 0);
+
+            const itensDetalhados = await Promise.all(
+              idsUnicos.map(async (id) => {
+                try {
+                  const itemResponse = await getCardapioItem(id);
+                  const item = itemResponse?.data?.dados;
+
+                  return {
+                    id,
+                    nome: item?.nome || `Item ${id}`,
+                    quantidade: contagem[id] || 0,
+                  };
+                } catch {
+                  return {
+                    id,
+                    nome: `Item ${id}`,
+                    quantidade: contagem[id] || 0,
+                  };
+                }
+              })
+            );
+
+            return {
+              ...comanda,
+              itensDetalhados,
+            };
+          })
+        );
+
+        setComandas(comandasComDetalhes);
       } catch (err) {
-        console.error('❌ Erro ao buscar pedidos:', err);
+        console.error("Erro ao buscar pedidos:", err);
         setError(err);
       } finally {
         setLoading(false);
@@ -31,64 +102,66 @@ export function PainelCozinha({ refreshTrigger }) {
     };
 
     fetchComandas();
-    console.log(comandas)
-  }, [refreshTrigger]); // <-- O gatilho de atualização!
+  }, [refreshTrigger]);
 
-  // Função para lidar com a mudança de status
   const handleMudarStatus = async (id, novoStatus) => {
     try {
-      // 1. Chama a API para atualizar o back-end
       const response = await updateComandaStatus(id, novoStatus);
-      
-      // 2. Atualiza o estado local (UI) com os dados da resposta
-      // Isso evita um novo 'GET' e atualiza a tela instantaneamente
+      const comandaAtualizada = response?.data?.dados;
+
       setComandas((comandasAnteriores) =>
         comandasAnteriores.map((comanda) =>
-          comanda.id === id ? response.data : comanda
+          comanda.id === id
+            ? {
+                ...comanda,
+                ...comandaAtualizada,
+                itensDetalhados: comanda.itensDetalhados,
+              }
+            : comanda
         )
       );
-      
-      console.log(`Status do Pedido #${id} atualizado para ${novoStatus}`);
-    
     } catch (err) {
-      console.error('Erro ao atualizar status:', err);
-      alert('Falha ao atualizar o status do pedido.');
+      console.error("Erro ao atualizar status:", err);
+      alert("Falha ao atualizar o status do pedido.");
     }
   };
 
-  // Função para cancelar (deletar) um pedido
   const handleCancelarPedido = async (id) => {
-    // Pede confirmação ao usuário antes de deletar
-    const confirmacao = window.confirm('Tem certeza que deseja cancelar este pedido?');
-    
-    if (!confirmacao) {
-      return; // Se o usuário cancelar, não faz nada
-    }
+    const confirmacao = window.confirm(
+      "Tem certeza que deseja cancelar este pedido?"
+    );
+
+    if (!confirmacao) return;
 
     try {
-      // 1. Chama a API para deletar no back-end
       await deleteComanda(id);
-      
-      // 2. Remove o pedido do estado local (UI)
+
       setComandas((comandasAnteriores) =>
         comandasAnteriores.filter((c) => c.id !== id)
       );
-      
-      console.log(`Pedido #${id} cancelado com sucesso!`);
-    
     } catch (err) {
-      console.error('Erro ao cancelar pedido:', err);
-      alert('Falha ao cancelar o pedido.');
+      console.error("Erro ao cancelar pedido:", err);
+      alert("Falha ao cancelar o pedido.");
     }
   };
 
-  // --- Renderização ---
-  
+  const formatarStatus = (status) => {
+    const mapa = {
+      pendente: "Pendente",
+      em_preparo: "Em preparo",
+      pronto: "Pronto",
+      entregue: "Entregue",
+      cancelado: "Cancelado",
+    };
+
+    return mapa[status] || status;
+  };
+
   if (loading && comandas.length === 0) {
     return (
       <div className="cozinha-secao">
-        <h2>👨‍🍳 Painel da Cozinha (Pedidos Feitos)</h2>
-        <div className="loading-cozinha">Carregando pedidos da cozinha...</div>
+        <h2>👨‍🍳 Painel da Cozinha</h2>
+        <div className="loading-cozinha">Carregando pedidos...</div>
       </div>
     );
   }
@@ -96,7 +169,7 @@ export function PainelCozinha({ refreshTrigger }) {
   if (error) {
     return (
       <div className="cozinha-secao">
-        <h2>👨‍🍳 Painel da Cozinha (Pedidos Feitos)</h2>
+        <h2>👨‍🍳 Painel da Cozinha</h2>
         <div className="error-cozinha">
           ❌ Erro ao buscar pedidos. Verifique se o back-end está rodando.
         </div>
@@ -106,71 +179,95 @@ export function PainelCozinha({ refreshTrigger }) {
 
   return (
     <div className="cozinha-secao">
-      <h3>👨‍🍳 Painel da Cozinha (Pedidos Feitos)</h3>
+      <h3>👨‍🍳 Painel da Cozinha</h3>
+
       <p className="cozinha-info">
-        {comandas.length === 0 
-          ? 'Nenhum pedido feito ainda. Faça seu primeiro pedido!' 
-          : `Total de pedidos: ${comandas.length}`
-        }
+        {comandas.length === 0
+          ? "Nenhum pedido feito ainda. Faça seu primeiro pedido!"
+          : `Total de pedidos: ${comandas.length}`}
       </p>
-      
+
       {comandas.length > 0 && (
         <div className="cozinha-lista">
           {comandas.map((comanda) => (
             <div key={comanda.id} className="cozinha-pedido">
               <h3>Pedido #{comanda.id}</h3>
+
               <p className="cozinha-mesa">🪑 Mesa: {comanda.mesa}</p>
+
               <p className="cozinha-status">
-                Status: <span className={`status status-${comanda.status.toLowerCase().replace(' ', '-')}`}>{comanda.status}</span>
+                Status:{" "}
+                <span className={`status status-${comanda.status}`}>
+                  {formatarStatus(comanda.status)}
+                </span>
               </p>
-              <p className="cozinha-itens" style={{whiteSpace: "pre-line"}}>
-                📋 Itens: {"\n"} {comanda.fetchItensCardapio.map(c => c + " x" + comanda.listaQuantItens[c] + '\n')}
-              </p>
-              <p className="cozinha-total">
-                <strong>💰 Total: R$ {comanda.total.toFixed(2)}</strong>
-              </p>
-              <p className="cozinha-data">
-                <small>🕐 Recebido: {new Date(comanda.dataPedido).toLocaleString('pt-BR')}</small>
-              </p>
-              
-              {/* --- NOVOS BOTÕES DE AÇÃO --- */}
-              <div className="botoes-acao">
-                {/* Botão "Em Preparo" (só aparece se status for "pendente") */}
-                {comanda.status === 'pendente' && (
-                  <button 
-                    className="btn-em-preparo"
-                    onClick={() => handleMudarStatus(comanda.id, 'Em Preparo')}
-                  >
-                    Marcar "Em Preparo"
-                  </button>
-                )}
-                
-                {/* Botão "Concluído" (só aparece se status for "Em Preparo") */}
-                {comanda.status === 'Em Preparo' && (
-                  <button 
-                    className="btn-concluido"
-                    onClick={() => handleMudarStatus(comanda.id, 'Concluído')}
-                  >
-                    Marcar "Concluído"
-                  </button>
-                )}
-                
-                {/* Mensagem de Concluído (só aparece se status for "Concluído") */}
-                {comanda.status === 'Concluído' && (
-                  <p className="status-concluido-msg">Pedido Finalizado!</p>
-                )}
-                
-                {/* Botão "Cancelar Pedido" (só aparece se status NÃO for "Concluído") */}
-                {comanda.status !== 'Concluído' && (
-                  <button 
-                    className="btn-cancelar"
-                    onClick={() => handleCancelarPedido(comanda.id)}
-                  >
-                    🗑️ Cancelar Pedido
-                  </button>
+
+              <div className="cozinha-itens">
+                <strong>📋 Itens:</strong>
+                {comanda.itensDetalhados?.length > 0 ? (
+                  <ul>
+                    {comanda.itensDetalhados.map((item) => (
+                      <li key={item.id}>
+                        {item.nome} x{item.quantidade}
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p>Nenhum item encontrado.</p>
                 )}
               </div>
-              {/* --- FIM DOS BOTÕES --- */}
+
+              <p className="cozinha-total">
+                <strong>💰 Total: R$ {Number(comanda.total).toFixed(2)}</strong>
+              </p>
+
+              <p className="cozinha-data">
+                <small>
+                  🕐 Recebido:{" "}
+                  {comanda.criado_em
+                    ? new Date(comanda.criado_em).toLocaleString("pt-BR")
+                    : "Data indisponível"}
+                </small>
+              </p>
+
+              <div className="botoes-acao">
+                {comanda.status === "pendente" && (
+                  <button
+                    className="btn-em-preparo"
+                    onClick={() => handleMudarStatus(comanda.id, "em_preparo")}
+                  >
+                    Marcar em preparo
+                  </button>
+                )}
+
+                {comanda.status === "em_preparo" && (
+                  <button
+                    className="btn-concluido"
+                    onClick={() => handleMudarStatus(comanda.id, "pronto")}
+                  >
+                    Marcar pronto
+                  </button>
+                )}
+
+                {comanda.status === "pronto" && (
+                  <button
+                    className="btn-concluido"
+                    onClick={() => handleMudarStatus(comanda.id, "entregue")}
+                  >
+                    Marcar entregue
+                  </button>
+                )}
+
+                {comanda.status !== "entregue" &&
+                  comanda.status !== "cancelado" && (
+                    <button
+                      className="btn-cancelar"
+                      onClick={() => handleCancelarPedido(comanda.id)}
+                    >
+                      🗑️ Cancelar Pedido
+                    </button>
+                  )}
+              </div>
             </div>
           ))}
         </div>
