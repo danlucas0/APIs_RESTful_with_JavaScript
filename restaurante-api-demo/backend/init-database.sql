@@ -1,4 +1,10 @@
 -- =========================
+-- CRIAR BANCO
+-- =========================
+CREATE DATABASE IF NOT EXISTS restaurante_db;
+USE restaurante_db;
+
+-- =========================
 -- TABELA USUÁRIOS
 -- =========================
 CREATE TABLE IF NOT EXISTS usuarios (
@@ -76,15 +82,19 @@ CREATE INDEX idx_comandas_usuario ON comandas(usuario_id);
 -- DADOS INICIAIS
 -- =========================
 
--- MESAS
+-- MESAS (não duplica)
 INSERT INTO mesas (numero) VALUES
-(1),(2),(3),(4),(5),(6),(7),(8),(9),(10);
+(1),(2),(3),(4),(5),(6),(7),(8),(9),(10)
+ON DUPLICATE KEY UPDATE numero = VALUES(numero);
 
--- ADMIN PADRÃO
+-- ADMIN PADRÃO (não duplica)
 INSERT INTO usuarios (nome, email, senha, role)
 VALUES (
   'Administrador',
   'admin@restaurante.com',
   '$2b$10$hashaqui',
   'admin'
-);
+)
+ON DUPLICATE KEY UPDATE
+nome = VALUES(nome),
+role = VALUES(role);
