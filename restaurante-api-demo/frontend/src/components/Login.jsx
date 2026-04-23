@@ -9,7 +9,7 @@ export function Login({ onLoginSuccess }) {
   const [loading, setLoading] = useState(false);
   const [mensagem, setMensagem] = useState("");
 
-  const API_URL = "http://localhost:4000/api";
+  const API_URL = import.meta.env.VITE_API_URL;
 
   const limparCampos = () => {
     setNome("");

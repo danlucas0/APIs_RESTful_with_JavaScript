@@ -297,7 +297,7 @@ function App() {
 
         <div className="error">
           <p>❌ Erro: o back-end não respondeu.</p>
-          <p>Verifique se o servidor está rodando em http://localhost:4000</p>
+          <p>Verifique se o back-end está online e configurado corretamente.</p>
         </div>
       </div>
     );
