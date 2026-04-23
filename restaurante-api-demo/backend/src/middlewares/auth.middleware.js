@@ -1,6 +1,7 @@
 const jwt = require("jsonwebtoken");
 
-const SECRET = "segredo_super_secreto";
+// 🔐 usa variável de ambiente (NUNCA deixar fixo)
+const SECRET = process.env.JWT_SECRET;
 
 const verificarToken = (req, res, next) => {
   try {
@@ -9,13 +10,14 @@ const verificarToken = (req, res, next) => {
     if (!authHeader) {
       return res.status(401).json({
         sucesso: false,
-        mensagem: "Token não enviado",
+        mensagem: "Token não informado",
       });
     }
 
-    const [, token] = authHeader.split(" ");
+    // formato esperado: Bearer token
+    const [tipo, token] = authHeader.split(" ");
 
-    if (!token) {
+    if (tipo !== "Bearer" || !token) {
       return res.status(401).json({
         sucesso: false,
         mensagem: "Token inválido",
@@ -24,17 +26,30 @@ const verificarToken = (req, res, next) => {
 
     const decoded = jwt.verify(token, SECRET);
 
-    req.usuario = decoded;
+    req.usuario = {
+      id: decoded.id,
+      nome: decoded.nome,
+      email: decoded.email,
+      role: decoded.role,
+    };
+
     next();
   } catch (error) {
     return res.status(401).json({
       sucesso: false,
-      mensagem: "Token inválido ou expirado",
+      mensagem: "Token expirado ou inválido",
     });
   }
 };
 
 const adminOnly = (req, res, next) => {
+  if (!req.usuario) {
+    return res.status(401).json({
+      sucesso: false,
+      mensagem: "Usuário não autenticado",
+    });
+  }
+
   if (req.usuario.role !== "admin") {
     return res.status(403).json({
       sucesso: false,

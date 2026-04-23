@@ -8,16 +8,8 @@ const authController = require("../controllers/auth.controller");
 
 const {
   verificarToken,
-  adminOnly
+  adminOnly,
 } = require("../middlewares/auth.middleware");
-
-
-// =====================
-// 📌 CARDÁPIO (público)
-// =====================
-router.get("/cardapio", cardapioController.listarCardapio);
-router.get("/cardapio/:id", cardapioController.getCardapioItem);
-
 
 // =====================
 // 🔐 AUTENTICAÇÃO
@@ -25,34 +17,59 @@ router.get("/cardapio/:id", cardapioController.getCardapioItem);
 router.post("/auth/register", authController.register);
 router.post("/auth/login", authController.login);
 
+// =====================
+// 🍽️ CARDÁPIO (PÚBLICO)
+// =====================
+router.get("/cardapio", cardapioController.listarCardapio);
+router.get("/cardapio/:id", cardapioController.getCardapioItem);
 
 // =====================
-// 🪑 MESAS
+// 🪑 MESAS (PROTEGIDO)
 // =====================
-router.get("/mesas", mesasController.getMesasDisponiveis);
-
+router.get("/mesas", verificarToken, mesasController.getMesasDisponiveis);
 
 // =====================
 // 📦 COMANDAS (PEDIDOS)
 // =====================
 
 // 👑 ADMIN vê todos
-router.get("/comandas", verificarToken, adminOnly, comandasController.getComandas);
+router.get(
+  "/comandas",
+  verificarToken,
+  adminOnly,
+  comandasController.getComandas
+);
 
 // 👤 CLIENTE cria pedido
-router.post("/comandas", verificarToken, comandasController.createComanda);
+router.post(
+  "/comandas",
+  verificarToken,
+  comandasController.createComanda
+);
 
 // 👑 ADMIN muda status
-router.patch("/comandas/:id", verificarToken, adminOnly, comandasController.updateComandaStatus);
+router.patch(
+  "/comandas/:id",
+  verificarToken,
+  adminOnly,
+  comandasController.updateComandaStatus
+);
 
 // 👑 ADMIN pode deletar
-router.delete("/comandas/:id", verificarToken, adminOnly, comandasController.deleteComanda);
-
+router.delete(
+  "/comandas/:id",
+  verificarToken,
+  adminOnly,
+  comandasController.deleteComanda
+);
 
 // =====================
 // 👤 CLIENTE - MEUS PEDIDOS
 // =====================
-router.get("/comandas/minhas", verificarToken, comandasController.getMinhasComandas);
-
+router.get(
+  "/comandas/minhas",
+  verificarToken,
+  comandasController.getMinhasComandas
+);
 
 module.exports = router;
