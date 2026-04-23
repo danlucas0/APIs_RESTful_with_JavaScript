@@ -8,6 +8,7 @@ const api = axios.create({
   timeout: 10000,
 });
 
+// 🔐 interceptor para enviar token automaticamente
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem("token");
@@ -21,6 +22,20 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
+// ==========================
+// 🔑 AUTH
+// ==========================
+export const cadastrarUsuario = (dados) => {
+  return api.post("/auth/register", dados);
+};
+
+export const loginUsuario = (dados) => {
+  return api.post("/auth/login", dados);
+};
+
+// ==========================
+// 🍽️ CARDÁPIO
+// ==========================
 export const getCardapio = () => {
   return api.get("/cardapio");
 };
@@ -29,6 +44,9 @@ export const getCardapioItem = (id) => {
   return api.get(`/cardapio/${id}`);
 };
 
+// ==========================
+// 📦 COMANDAS
+// ==========================
 export const createComanda = (comanda) => {
   return api.post("/comandas", comanda);
 };
@@ -49,6 +67,9 @@ export const deleteComanda = (id) => {
   return api.delete(`/comandas/${id}`);
 };
 
+// ==========================
+// 🪑 MESAS
+// ==========================
 export const getMesas = () => {
   return api.get("/mesas");
 };

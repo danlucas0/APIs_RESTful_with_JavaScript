@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { cadastrarUsuario, loginUsuario } from "../services/api";
 import "./Login.css";
 
 export function Login({ onLoginSuccess }) {
@@ -8,8 +9,6 @@ export function Login({ onLoginSuccess }) {
   const [senha, setSenha] = useState("");
   const [loading, setLoading] = useState(false);
   const [mensagem, setMensagem] = useState("");
-
-  const API_URL = import.meta.env.VITE_API_URL;
 
   const limparCampos = () => {
     setNome("");
@@ -34,33 +33,27 @@ export function Login({ onLoginSuccess }) {
     try {
       setLoading(true);
 
-      const endpoint = modoCadastro ? "/auth/register" : "/auth/login";
-
-      const body = modoCadastro
-        ? { nome: nome.trim(), email: email.trim(), senha }
-        : { email: email.trim(), senha };
-
-      const response = await fetch(`${API_URL}${endpoint}`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(body),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        setMensagem(data?.erro || data?.mensagem || "Erro na requisição.");
-        return;
-      }
+      let response;
 
       if (modoCadastro) {
+        response = await cadastrarUsuario({
+          nome: nome.trim(),
+          email: email.trim(),
+          senha,
+        });
+
         setMensagem("Cadastro realizado com sucesso! Agora faça login.");
         setModoCadastro(false);
         setSenha("");
         return;
       }
+
+      response = await loginUsuario({
+        email: email.trim(),
+        senha,
+      });
+
+      const data = response.data;
 
       localStorage.setItem("token", data.token);
       localStorage.setItem("user", JSON.stringify(data.usuario));
@@ -72,7 +65,12 @@ export function Login({ onLoginSuccess }) {
         onLoginSuccess(data.usuario);
       }
     } catch (error) {
-      setMensagem("Não foi possível conectar ao servidor.");
+      const mensagemErro =
+        error?.response?.data?.erro ||
+        error?.response?.data?.mensagem ||
+        "Não foi possível conectar ao servidor.";
+
+      setMensagem(mensagemErro);
     } finally {
       setLoading(false);
     }
@@ -128,11 +126,7 @@ export function Login({ onLoginSuccess }) {
             />
           </div>
 
-          {mensagem && (
-            <div className="login-mensagem">
-              {mensagem}
-            </div>
-          )}
+          {mensagem && <div className="login-mensagem">{mensagem}</div>}
 
           <button type="submit" className="login-btn-principal" disabled={loading}>
             {loading
